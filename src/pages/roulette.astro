@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Roulette" active="roulette">
+  <div class="wrap">
+    <p class="eyebrow">0500 · The Gloom</p>
+    <h1>F3 Roulette</h1>
+    <p class="sub">Enter your zip and how far you'll drive.<br>We'll send you somewhere new.</p>
+    <p class="sample-badge">Prototype — zip lookup is real geocoding; AO coordinates are hand-estimated from street addresses, not officially geocoded</p>
+
+    <div class="panel">
+      <div class="row">
+        <label for="zip">Starting from zip code</label>
+        <input type="text" id="zip" inputmode="numeric" maxlength="5" placeholder="66062" autocomplete="postal-code">
+        <div id="zipStatus" style="font-size:12px;color:var(--fog);margin-top:6px;min-height:16px;"></div>
+      </div>
+      <div class="row">
+        <label for="radius">Willing to travel — <span class="radius-value" id="radiusValue">15</span> miles</label>
+        <input type="range" id="radius" min="3" max="40" step="1" value="15">
+      </div>
+      <button id="spinBtn">Send Me to the Gloom</button>
+
+      <div class="reel-frame" id="reelFrame">
+        <div class="reel-strip">
+          <div class="reel-name" id="reelName">—</div>
+          <dl class="reel-meta" id="reelMeta"></dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .radius-value { color: var(--sunrise); font-weight: bold; }
+  .reel-frame {
+    margin-top: 28px; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--gloom-950); overflow: hidden; display: none;
+  }
+  .reel-frame.active { display: block; }
+  .reel-strip { padding: 22px 20px; text-align: center; }
+  .reel-name {
+    font-family: 'Arial Black', Impact, sans-serif; font-style: italic; text-transform: uppercase;
+    font-size: 28px; color: var(--paper); min-height: 34px;
+  }
+  .reel-name.landed { color: var(--sunrise); }
+  .reel-meta {
+    margin-top: 14px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px;
+    font-size: 13px; color: var(--fog); text-align: left; max-width: 380px; margin-left: auto; margin-right: auto;
+  }
+  .reel-meta dt { color: var(--sunrise-dim); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+  .reel-meta dd { margin: 0; }
+  .no-match { text-align: center; color: var(--fog); padding: 20px; font-size: 14px; }
+</style>
+
+<script>
+  import { aos, milesBetween } from '../data/ao-data.js';
+  import { geocodeZip } from '../lib/geocode.js';
+
+  const zipInput = document.getElementById('zip') as HTMLInputElement;
+  const zipStatus = document.getElementById('zipStatus') as HTMLElement;
+  const radiusInput = document.getElementById('radius') as HTMLInputElement;
+  const radiusValue = document.getElementById('radiusValue') as HTMLElement;
+  const spinBtn = document.getElementById('spinBtn') as HTMLButtonElement;
+  const reelFrame = document.getElementById('reelFrame') as HTMLElement;
+  const reelName = document.getElementById('reelName') as HTMLElement;
+  const reelMeta = document.getElementById('reelMeta') as HTMLElement;
+
+  radiusInput.addEventListener('input', () => radiusValue.textContent = radiusInput.value);
+
+  spinBtn.addEventListener('click', async () => {
+    const zip = zipInput.value.trim();
+    if (!/^\d{5}$/.test(zip)) {
+      zipStatus.textContent = 'Enter a valid 5-digit zip code.';
+      zipStatus.style.color = '#ff8a54';
+      return;
+    }
+
+    spinBtn.disabled = true;
+    zipStatus.textContent = 'Looking up zip…';
+    zipStatus.style.color = 'var(--fog)';
+
+    let anchor;
+    try {
+      anchor = await geocodeZip(zip);
+      zipStatus.textContent = `Anchored at ${anchor.label}`;
+      zipStatus.style.color = 'var(--fog)';
+    } catch (e) {
+      zipStatus.textContent = "Couldn't find that zip code — double-check it and try again.";
+      zipStatus.style.color = '#ff8a54';
+      spinBtn.disabled = false;
+      return;
+    }
+
+    const radius = parseInt(radiusInput.value, 10);
+    const inRange = aos
+      .map(ao => ({ ...ao, dist: milesBetween(anchor.lat, anchor.lon, ao.lat, ao.lon) }))
+      .filter(ao => ao.dist <= radius);
+
+    reelFrame.classList.add('active');
+    reelName.classList.remove('landed');
+    reelMeta.innerHTML = '';
+
+    const existingNoMatch = reelFrame.querySelector('.no-match');
+    if (existingNoMatch) existingNoMatch.remove();
+
+    if (inRange.length === 0) {
+      reelName.textContent = 'No AOs in range';
+      const p = document.createElement('p');
+      p.className = 'no-match';
+      p.textContent = `Try widening your radius — nothing in the sample data falls within ${radius} miles of ${anchor.label}.`;
+      reelFrame.querySelector('.reel-strip')!.appendChild(p);
+      spinBtn.disabled = false;
+      return;
+    }
+
+    const winner = inRange[Math.floor(Math.random() * inRange.length)];
+    let ticks = 0;
+    const maxTicks = 14;
+    const interval = setInterval(() => {
+      const shuffled = aos[Math.floor(Math.random() * aos.length)];
+      reelName.textContent = shuffled.name;
+      ticks++;
+      if (ticks >= maxTicks) {
+        clearInterval(interval);
+        reelName.textContent = winner.name;
+        reelName.classList.add('landed');
+        reelMeta.innerHTML = `
+          <dt>Region</dt><dd>${winner.region}</dd>
+          <dt>Site</dt><dd>${winner.site}</dd>
+          <dt>When</dt><dd>${winner.day} · ${winner.time}</dd>
+          <dt>Distance</dt><dd>${winner.dist.toFixed(1)} mi from ${anchor.label}</dd>
+        `;
+        spinBtn.disabled = false;
+      }
+    }, 90);
+  });
+</script>

@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { elements } from '../../data/badges.js';
+---
+<BaseLayout title="Elements" active="patch-locker">
+  <div class="wrap">
+    <p class="eyebrow">Self-Reported · Honor System</p>
+    <h1>Elements</h1>
+    <p class="sub">One-shot claims — did it or didn't. No tiers, no math.</p>
+    <p class="sample-badge">Prototype — canvas-drawn placeholder art; real patch design comes later</p>
+
+    <div class="row">
+      <label for="name">Name or F3 nickname (used on every badge below)</label>
+      <input type="text" id="name" placeholder="Whistlestop" maxlength="24">
+    </div>
+
+    <div class="elements-grid">
+      {elements.map(badge => (
+        <div class="element-card">
+          <div>
+            <h3>{badge.name}</h3>
+            <p class="desc">{badge.description}</p>
+            <button class="claim-btn" data-badge-id={badge.id}>Claim Badge</button>
+          </div>
+          <div class="patch-wrap" id={`patchWrap-${badge.id}`}>
+            <canvas id={`canvas-${badge.id}`} width="600" height="700"></canvas>
+            <br>
+            <a class="download-link" id={`download-${badge.id}`} download={`${badge.id}-badge.png`}>Download</a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .elements-grid { display: grid; gap: 20px; grid-template-columns: 1fr; margin-top: 24px; }
+  @media (min-width: 700px) { .elements-grid { grid-template-columns: 1fr 1fr; } }
+  .element-card { background: var(--gloom-900); border: 1px solid var(--line); border-radius: 6px; padding: 20px; }
+  .element-card h3 {
+    font-family: 'Arial Black', Impact, sans-serif; font-style: italic; text-transform: uppercase;
+    font-size: 18px; margin: 0 0 8px;
+  }
+  .desc { font-size: 13px; color: var(--fog); margin: 0 0 14px; line-height: 1.5; }
+  .claim-btn { padding: 12px; font-size: 14px; }
+  .patch-wrap { margin-top: 18px; text-align: center; display: none; }
+  .patch-wrap.active { display: block; }
+  canvas { max-width: 100%; height: auto; border-radius: 8px; }
+  .download-link {
+    display: inline-block; margin-top: 12px; color: var(--sunrise); text-decoration: none; font-size: 12px;
+    letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--sunrise-dim); border-radius: 4px; padding: 8px 14px;
+  }
+  .download-link:hover { background: var(--sunrise); color: #1a1002; }
+</style>
+
+<script>
+  import { elements } from '../../data/badges.js';
+  import { renderPatch } from '../../lib/patch-renderer.js';
+  import * as emblems from '../../lib/emblems.js';
+
+  const nameInput = document.getElementById('name') as HTMLInputElement;
+
+  document.querySelectorAll<HTMLButtonElement>('.claim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.badgeId!;
+      const badge = elements.find((b: any) => b.id === id);
+      if (!badge) return;
+
+      const canvas = document.getElementById(`canvas-${id}`) as HTMLCanvasElement;
+      const patchWrap = document.getElementById(`patchWrap-${id}`) as HTMLElement;
+      const downloadLink = document.getElementById(`download-${id}`) as HTMLAnchorElement;
+      const name = nameInput.value.trim() || 'Anonymous PAX';
+
+      const emblemFn = (emblems as any)[badge.emblem];
+      const emblemArgs = badge.emblemArgs || [];
+
+      renderPatch(canvas, {
+        color: badge.color,
+        fabricInner: badge.fabricInner,
+        fabricOuter: badge.fabricOuter,
+        topText: badge.name.toUpperCase(),
+        topAngleSpan: badge.topAngleSpan,
+        bottomText: badge.bottomText,
+        subtext: badge.subtext,
+        drawEmblem: (ctx: CanvasRenderingContext2D, cx: number, cy: number) => {
+          emblemFn(ctx, cx, cy, badge.color, ...emblemArgs);
+        },
+        name,
+      });
+
+      patchWrap.classList.add('active');
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob!);
+        downloadLink.href = url;
+      });
+    });
+  });
+</script>

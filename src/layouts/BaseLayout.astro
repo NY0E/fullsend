@@ -1,0 +1,31 @@
+---
+import '../styles/theme.css';
+
+interface Props {
+  title: string;
+  active?: 'home' | 'roulette' | 'patch-locker';
+}
+
+const { title, active } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title} · F3 Fan Site</title>
+</head>
+<body>
+  <nav class="top-nav">
+    <a href="/" class={active === 'home' ? 'active' : ''}>Home</a>
+    <a href="/roulette" class={active === 'roulette' ? 'active' : ''}>Roulette</a>
+    <a href="/patch-locker" class={active === 'patch-locker' ? 'active' : ''}>Patch Locker</a>
+  </nav>
+  <slot />
+  <div class="wrap" style="padding-top: 0;">
+    <footer class="site-footer">
+      Fan-built prototype · Not affiliated with or endorsed by F3 Nation
+    </footer>
+  </div>
+</body>
+</html>

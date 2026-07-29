@@ -1,0 +1,139 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Full Send" active="patch-locker">
+  <div class="wrap">
+    <p class="eyebrow">Self-Reported · Honor System</p>
+    <h1>Full Send</h1>
+    <p class="sub">Claim the patch for how many AOs you've actually posted at.<br>No login. No log. Just tell the truth.</p>
+    <p class="sample-badge">Prototype — region AO counts from the shared dataset (F3 The Fe &amp; F3 Kansas City samples only)</p>
+
+    <div class="panel">
+      <div class="row">
+        <label for="name">Name or F3 nickname</label>
+        <input type="text" id="name" placeholder="Whistlestop" maxlength="24">
+      </div>
+      <div class="row">
+        <label for="region">Region</label>
+        <select id="region"></select>
+      </div>
+      <div class="row">
+        <label for="count">How many different AOs in this region have you posted at?</label>
+        <input type="number" id="count" min="0" value="0">
+        <div class="count-hint" id="countHint"></div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="tier-readout">
+          <span>Bronze <strong>25%</strong></span>
+          <span>Silver <strong>50%</strong></span>
+          <span>Gold <strong>100%</strong></span>
+        </div>
+      </div>
+      <button id="genBtn">Generate My Patch</button>
+
+      <div class="patch-wrap" id="patchWrap">
+        <canvas id="patchCanvas" width="600" height="700"></canvas>
+        <br>
+        <a class="download-link" id="downloadLink" download="full-send-patch.png">Download Patch</a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .count-hint { font-size: 12px; color: var(--fog); margin-top: 6px; }
+  .progress-track { height: 8px; background: var(--gloom-800); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+  .progress-fill { height: 100%; background: var(--sunrise); transition: width 0.2s ease; width: 0%; }
+  .tier-readout { margin-top: 10px; font-size: 13px; color: var(--fog); display: flex; justify-content: space-between; }
+  .patch-wrap { margin-top: 28px; text-align: center; display: none; }
+  .patch-wrap.active { display: block; }
+  canvas { max-width: 100%; height: auto; border-radius: 8px; }
+  .download-link {
+    display: inline-block; margin-top: 16px; color: var(--sunrise); text-decoration: none; font-size: 13px;
+    letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--sunrise-dim); border-radius: 4px; padding: 10px 18px;
+  }
+  .download-link:hover { background: var(--sunrise); color: #1a1002; }
+</style>
+
+<script>
+  import { regions, regionAoCount } from '../../data/ao-data.js';
+  import { fullSend } from '../../data/badges.js';
+  import { renderPatch } from '../../lib/patch-renderer.js';
+  import { sunriseHills } from '../../lib/emblems.js';
+
+  const regionSelect = document.getElementById('region') as HTMLSelectElement;
+  const regionsWithCounts = regions.map(r => ({ ...r, total: regionAoCount(r.name) }));
+  regionsWithCounts.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.name} — ${r.total} AOs`;
+    regionSelect.appendChild(opt);
+  });
+
+  const countInput = document.getElementById('count') as HTMLInputElement;
+  const countHint = document.getElementById('countHint') as HTMLElement;
+  const progressFill = document.getElementById('progressFill') as HTMLElement;
+  const nameInput = document.getElementById('name') as HTMLInputElement;
+  const genBtn = document.getElementById('genBtn') as HTMLButtonElement;
+  const patchWrap = document.getElementById('patchWrap') as HTMLElement;
+  const canvas = document.getElementById('patchCanvas') as HTMLCanvasElement;
+  const downloadLink = document.getElementById('downloadLink') as HTMLAnchorElement;
+
+  function currentRegion() {
+    return regionsWithCounts.find(r => r.id === regionSelect.value)!;
+  }
+
+  function tierFor(pct: number) {
+    return fullSend.tiers.find(t => pct >= t.min)!;
+  }
+
+  function updateProgress() {
+    const region = currentRegion();
+    countInput.max = String(region.total);
+    let count = parseInt(countInput.value, 10) || 0;
+    count = Math.max(0, Math.min(count, region.total));
+    countInput.value = String(count);
+
+    const pct = (count / region.total) * 100;
+    countHint.textContent = `${count} of ${region.total} AOs in ${region.name}`;
+    progressFill.style.width = Math.min(pct, 100) + '%';
+    progressFill.style.background = tierFor(pct).color;
+  }
+
+  regionSelect.addEventListener('change', updateProgress);
+  countInput.addEventListener('input', updateProgress);
+  updateProgress();
+
+  genBtn.addEventListener('click', () => {
+    const region = currentRegion();
+    const count = Math.max(0, Math.min(parseInt(countInput.value, 10) || 0, region.total));
+    const pct = (count / region.total) * 100;
+    const tier = tierFor(pct);
+    const name = nameInput.value.trim() || 'Anonymous PAX';
+
+    renderPatch(canvas, {
+      color: tier.color,
+      fabricInner: fullSend.fabricInner,
+      fabricOuter: fullSend.fabricOuter,
+      topText: fullSend.topText,
+      bottomText: region.name.toUpperCase(),
+      pipRing: { total: region.total, filled: count },
+      drawEmblem: (ctx, cx, cy) => {
+        sunriseHills(ctx, cx, cy, tier.color);
+        ctx.textAlign = 'center';
+        ctx.font = 'italic 900 30px Impact, "Arial Black", sans-serif';
+        ctx.fillStyle = tier.color;
+        ctx.fillText(tier.name, cx, cy + 110);
+        ctx.font = '13px "Courier New", monospace';
+        ctx.fillStyle = '#aab6c8';
+        ctx.fillText(`${count} / ${region.total} AOS — ${Math.round(pct)}%`, cx, cy + 132);
+      },
+      name,
+    });
+
+    patchWrap.classList.add('active');
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob!);
+      downloadLink.href = url;
+    });
+  });
+</script>
