@@ -49,65 +49,68 @@ export function sunriseHills(ctx, cx, cy, color) {
   ctx.restore();
 }
 
-export function spartanHelmet(ctx, cx, cy, color) {
+export function sisyphus(ctx, cx, cy, color) {
   ctx.save();
-  ctx.translate(cx, cy + 15);
-  ctx.scale(1.05, 1.05);
+  ctx.translate(cx, cy + 20);
 
+  // slope
   ctx.beginPath();
-  ctx.moveTo(-58, -78);
-  ctx.bezierCurveTo(-40, -108, 30, -108, 66, -80);
-  ctx.bezierCurveTo(78, -70, 78, -58, 64, -54);
-  ctx.bezierCurveTo(30, -78, -30, -78, -50, -60);
-  ctx.bezierCurveTo(-56, -66, -58, -72, -58, -78);
+  ctx.moveTo(-95, 55);
+  ctx.lineTo(70, -35);
+  ctx.lineTo(95, -35);
+  ctx.lineTo(95, 60);
+  ctx.lineTo(-95, 60);
   ctx.closePath();
-  ctx.fillStyle = '#c7c9cf';
+  ctx.fillStyle = '#15100f';
   ctx.fill();
-
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 1.5;
-  for (let x = -50; x < 62; x += 7) {
-    ctx.beginPath();
-    ctx.moveTo(x, -100 + Math.abs(x) * 0.15);
-    ctx.lineTo(x + 3, -58);
-    ctx.stroke();
-  }
-
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
   ctx.beginPath();
-  ctx.moveTo(-52, -58);
-  ctx.bezierCurveTo(-56, -20, -54, 10, -44, 34);
-  ctx.bezierCurveTo(-38, 52, -20, 62, 2, 60);
-  ctx.bezierCurveTo(10, 58, 8, 44, 2, 40);
-  ctx.bezierCurveTo(20, 36, 34, 24, 40, 4);
-  ctx.bezierCurveTo(46, -10, 44, -26, 34, -40);
-  ctx.bezierCurveTo(26, -50, 8, -58, -14, -60);
-  ctx.bezierCurveTo(-28, -61, -42, -60, -52, -58);
-  ctx.closePath();
-  ctx.fillStyle = '#c7c9cf';
+  ctx.moveTo(-95, 55);
+  ctx.lineTo(70, -35);
+  ctx.stroke();
+
+  // boulder, part-way up the slope
+  ctx.beginPath();
+  ctx.arc(28, -6, 26, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(28, -6, 26, 0.4, 2.6);
+  ctx.stroke();
+
+  // figure, bent forward, pushing
+  ctx.strokeStyle = '#d8d2c8';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  // back leg
+  ctx.beginPath();
+  ctx.moveTo(-24, 42);
+  ctx.lineTo(-6, 18);
+  ctx.stroke();
+  // front leg
+  ctx.beginPath();
+  ctx.moveTo(4, 44);
+  ctx.lineTo(6, 20);
+  ctx.stroke();
+  // torso, leaning into the push
+  ctx.beginPath();
+  ctx.moveTo(-6, 18);
+  ctx.lineTo(14, -12);
+  ctx.stroke();
+  // arm, reaching to the boulder
+  ctx.beginPath();
+  ctx.moveTo(6, -2);
+  ctx.lineTo(4, -14);
+  ctx.stroke();
+  // head
+  ctx.beginPath();
+  ctx.arc(18, -20, 7, 0, Math.PI * 2);
+  ctx.fillStyle = '#d8d2c8';
   ctx.fill();
 
-  const shade = ctx.createLinearGradient(-50, -60, 40, 40);
-  shade.addColorStop(0, 'rgba(255,255,255,0.10)');
-  shade.addColorStop(0.5, 'rgba(255,255,255,0)');
-  shade.addColorStop(1, 'rgba(0,0,0,0.18)');
-  ctx.fillStyle = shade;
-  ctx.fill();
-
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.beginPath();
-  ctx.moveTo(6, -18);
-  ctx.bezierCurveTo(16, -22, 30, -20, 36, -12);
-  ctx.bezierCurveTo(30, -6, 16, -6, 6, -10);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(14, -12);
-  ctx.lineTo(20, -12);
-  ctx.lineTo(16, 10);
-  ctx.lineTo(11, 10);
-  ctx.closePath();
-  ctx.fill();
-  ctx.globalCompositeOperation = 'source-over';
   ctx.restore();
 }
 
@@ -138,24 +141,33 @@ export function snowflake(ctx, cx, cy, color) {
   ctx.restore();
 }
 
-export function sunBadge(ctx, cx, cy, color) {
+export function flame(ctx, cx, cy, color) {
   ctx.save();
-  const grad = ctx.createRadialGradient(cx, cy, 6, cx, cy, 44);
-  grad.addColorStop(0, '#fff0c2');
-  grad.addColorStop(1, color);
+  ctx.translate(cx, cy + 10);
+
+  // outer flame
   ctx.beginPath();
-  ctx.arc(cx, cy, 38, 0, Math.PI * 2);
-  ctx.fillStyle = grad;
+  ctx.moveTo(0, 65);
+  ctx.bezierCurveTo(-40, 30, -34, -10, -8, -50);
+  ctx.bezierCurveTo(-16, -30, -4, -20, 4, -34);
+  ctx.bezierCurveTo(2, -50, 14, -66, 10, -78);
+  ctx.bezierCurveTo(34, -50, 44, -16, 34, 10);
+  ctx.bezierCurveTo(44, 0, 46, -14, 46, -14);
+  ctx.bezierCurveTo(52, 20, 40, 50, 0, 65);
+  ctx.closePath();
+  ctx.fillStyle = color;
   ctx.fill();
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * 46, cy + Math.sin(a) * 46);
-    ctx.lineTo(cx + Math.cos(a) * 62, cy + Math.sin(a) * 62);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-  }
+
+  // inner ember
+  ctx.beginPath();
+  ctx.moveTo(0, 42);
+  ctx.bezierCurveTo(-16, 22, -12, 2, 2, -20);
+  ctx.bezierCurveTo(4, -6, 12, -4, 14, -14);
+  ctx.bezierCurveTo(22, 4, 22, 24, 0, 42);
+  ctx.closePath();
+  ctx.fillStyle = '#ffd27a';
+  ctx.fill();
+
   ctx.restore();
 }
 
